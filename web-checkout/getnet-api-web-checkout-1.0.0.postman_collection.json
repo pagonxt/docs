@@ -1,0 +1,217 @@
+{
+	"info": {
+		"_postman_id": "7ebe3bd2-5b6b-4029-9767-d5a522603d4f",
+		"name": "getnet-api-web-checkout-1.0.0",
+		"description": "The Web-based Checkout system can be embedded into your online store in the form of a transparent Checkout in iFrame and Lightbox format, or with the generation of external links for payment in the Redirect URL version.  \nFor more details on the product, see our GetNet developer portal.\n\n[https://docs.getnetworld.com](https://docs.getnetworld.com/)\n\nBefore testing the APIs, configure some attributes in the Postman environment and select them for consumption.\n\nGetNet APIs base URL  \n**host_getnet_api**: fill in `https://api.pre.globalgetnet.com` for the approval environment (PRE) or `https://api.globalgetnet.com` for the production environment (LIVE).\n\nAuthentication credentials for the APIs  \n**client_id**: obtained from GetNet  \n**client_secret**: obtained from GetNet\n\n---\n\n**Authentication**\n\nThe collection is set to persist the value of `access_token` automatically on successful execution of the `Create Access Token` endpoint.\n\n---\n\n**Link creation or payment intent**\n\nEnter your order ID in the `order_id` field of the request payload.  \nEnter the currency of the merchant's country in the `payment.currency` field, `ARS` for Argentina and `CLP` for Chile.  \nFor more details on the payload fields, see the API Explorer section of the Web Checkout product on our developer portal.\n\n---\n\n**Post-transaction operations**\n\nThe `Refund Payment` and `Cancel Payment` endpoints require a `payment_id` parameter, which must be obtained on receipt of the webhook after payment authorization.  \nFor more details on the webhook solution, see our developer portal.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Access Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);\r",
+							"pm.environment.set(\"access_token\", jsonData.access_token);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "Cookie",
+						"value": "route=1633963179.192.3874.66852"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{client_id}}",
+							"description": "Set in the environment variables",
+							"type": "default"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{client_secret}}",
+							"description": "Set in the environment variables",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{host_getnet_api}}/authentication/oauth2/access_token",
+					"host": [
+						"{{host_getnet_api}}"
+					],
+					"path": [
+						"authentication",
+						"oauth2",
+						"access_token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Payment Intent",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"order_id\": \"PUT_YOUR_ORDER_ID_HERE\",\r\n  \"customer\": {\r\n    \"customer_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n    \"first_name\": \"João\",\r\n    \"last_name\": \"da Silva\",\r\n    \"name\": \"João da Silva\",\r\n    \"email\": \"customer@email.com.br\",\r\n    \"document_type\": \"cpf\",\r\n    \"document_number\": \"12345678912\",\r\n    \"billing_address\": {\r\n      \"street\": \"Av. Brasil\",\r\n      \"number\": \"1000\",\r\n      \"country\": \"BR\",\r\n      \"postal_code\": \"90230060\"\r\n    }\r\n  },\r\n  \"shipping\": {\r\n    \"first_name\": \"João\",\r\n    \"last_name\": \"da Silva\",\r\n    \"address\": {\r\n      \"street\": \"Av. Brasil\",\r\n      \"number\": \"100\",\r\n      \"postal_code\": \"90230060\",\r\n      \"country\": \"BR\"\r\n    }\r\n  },\r\n  \"product\": [\r\n    {\r\n      \"title\": \"Toy car\",\r\n      \"value\": 150,\r\n      \"quantity\": 10\r\n    }\r\n  ],\r\n  \"payment\": {\r\n    \"currency\": \"CLP\",\r\n    \"amount\": 15000\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{host_getnet_api}}/digital-checkout/v1/payment-intent",
+					"host": [
+						"{{host_getnet_api}}"
+					],
+					"path": [
+						"digital-checkout",
+						"v1",
+						"payment-intent"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Refund Payment",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"amount\": 1000\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{host_getnet_api}}/digital-checkout/v1/payments/{{payment_id}}/refund",
+					"host": [
+						"{{host_getnet_api}}"
+					],
+					"path": [
+						"digital-checkout",
+						"v1",
+						"payments",
+						"{{payment_id}}",
+						"refund"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Cancel Payment",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{host_getnet_api}}/digital-checkout/v1/payments/{{payment_id}}/refund",
+					"host": [
+						"{{host_getnet_api}}"
+					],
+					"path": [
+						"digital-checkout",
+						"v1",
+						"payments",
+						"{{payment_id}}",
+						"refund"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
