@@ -1,0 +1,2006 @@
+{
+  "info": {
+    "_postman_id": "ad5581c3-db7d-4884-b6a1-bc42db10aa88",
+    "name": "getnet-regional-api-fisico-1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "SEP",
+      "item": [
+        {
+          "name": "Seller authentication",
+          "item": [
+            {
+              "name": "Access Token Generator",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"token\", data.access_token);\r",
+                      "\r",
+                      "const func_and_scenario_prefix = \"func1-sce1_1-\";\r",
+                      "\r",
+                      "uuid = require('uuid');\r",
+                      "pm.environment.set(\"testing_control_key\", func_and_scenario_prefix + uuid.v4());\r",
+                      "\r",
+                      "let dateNow = new Date();\r",
+                      "let tomorrow = new Date();\r",
+                      "tomorrow.setDate(dateNow.getDate() + 1);\r",
+                      "let thirtyDaysAgo = new Date();\r",
+                      "thirtyDaysAgo.setDate(dateNow.getDate() - 30);\r",
+                      "\r",
+                      "\r",
+                      "pm.environment.set(\"currentDateTime\", dateNow.toISOString());\r",
+                      "pm.environment.set(\"diaSeguinte\", tomorrow.toISOString());\r",
+                      "pm.environment.set(\"thirtyDaysAgo\", thirtyDaysAgo.toISOString());\r",
+                      "\r",
+                      "pm.test(\"Status code is 200\", function () {\r",
+                      "    pm.response.to.have.status(200);\r",
+                      "});\r",
+                      "\r",
+                      "pm.test(\"Token recuperado com sucesso\", function () {\r",
+                      "    pm.response.to.not.be.error; \r",
+                      "    pm.response.to.have.jsonBody(\"expires_in\", 3599);\r",
+                      "    pm.response.to.not.have.jsonBody(\"payment.error\");});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "basic",
+                  "basic": [
+                    {
+                      "key": "password",
+                      "value": "{{SECRET_ID}}",
+                      "type": "string"
+                    },
+                    {
+                      "key": "username",
+                      "value": "{{CLIENT_ID}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-www-form-urlencoded"
+                  }
+                ],
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "grant_type",
+                      "value": "client_credentials",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/authentication/oauth2/access_token",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["authentication", "oauth2", "access_token"]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Access Token Generator\n\n```\nIt is the service where we obtain a secure access token to call the exposed APIs. It is through this service that our security structure performs access permission validations, to ensure that only users with valid credentials will access the services.\n\n ```"
+        },
+        {
+          "name": "Simple payment",
+          "item": [
+            {
+              "name": "Payment authorization DEBIT",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": ["pm.environment.set(\"amount\", Number(require('moment')().format('HHmm')));"],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$randomUUID}}\",\r\n    \"request_id\": \"{{$randomUUID}}\",\r\n    \"order_id\": \"{{$randomUUID}}\",\r\n    \"data\": {\r\n        \"amount\": {{amount}},\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"{{$randomUUID}}\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$randomUUID}}\",\r\n            \"payment_method\": \"DIRECT_DEBIT\",\r\n            \"transaction_type\": \"FULL\",\r\n            \"number_installments\": 1,\r\n            \"soft_descriptor\": \"MINHA*LOJA\",\r\n            \"dynamic_mcc\": \"1234\",\r\n            \"card\": {\r\n                \"number\": \"4757755100002175\",\r\n                \"expiration_month\": \"10\",\r\n                \"expiration_year\": \"28\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"entry_mode\": \"chip\",\r\n                \"emv\": \"9f2701809f3303e0f8c8950580000080009f37045d21705a9f100706010a03a0b8089f2608819ba36f3f7934149f360205b782021c009c01009f1a0204849a032002279f02060000000309605F2A0200325f3401019f34031e03009f120c56495341204352454449544f5f201a2f435249535449414e2047414c494e444f2043484156455a2020\",\r\n                \"track_2\": \"4757755100002175=102828102800006930\"\r\n            }\r\n        }\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Payment authorization CREDIT",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);\r",
+                      "pm.environment.set(\"amount\", data.amount)"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.set(\"amount\", Number(require('moment')().format('HHmm')));\r",
+                      "\r",
+                      "//Cards AR\r",
+                      "//    6502720013589570 - CABAL (cvv 699 validade 11/29)\r",
+                      "//    6500870076437051 - CABAL (cvv 254 validade 11/29)\r",
+                      "//    5895625664145911 - NARANJA\r",
+                      "//    373953192351004  - AMEX (cvv 7386 validade 12/25)\r",
+                      "//    4123220000000909 - VISA CREDIT\r",
+                      "//\t  4231390000011336 - VISA CREDIT\r",
+                      "//\t  4517510000000931 - VISA DEBIT\r",
+                      "//    5308418330410236 - MASTER CREDIT\r",
+                      "//\t  5491800000000537 - MASTER DEBIT\r",
+                      "//    Card CL\r",
+                      "//    5213120418132948 - Mastercard domestico\r",
+                      "//    5110420000006938 - Mastercard internacional\r",
+                      "//    4508830000001759 - Visa domestico\r",
+                      "//    4025240000000948 - Visa internacional \r",
+                      "//    37667202091579261 - Amex internacional \r",
+                      "//    Cards MX\r",
+                      "//    5188999100986013 - Mastercard - Credito\r",
+                      "//    4931350008098878 - Visa - Credito\r",
+                      "//    5062650005970377 - Carnet (Nacional) - Débito\r",
+                      "//    376674798472005  - Amex (cvv 5595 validade 02/26) \r",
+                      "//    6510000000000810 - Discover (Nacional) - Credito\r",
+                      "//    Cartão BR \r",
+                      "//    5155901222280001 - MASTERCARD\r",
+                      "//    4012001037141112 - VISA\r",
+                      "//    4705980000007171 - VISA PARCELADO\r",
+                      "//    "
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$randomUUID}}\",\r\n    \"request_id\": \"{{$randomUUID}}\",\r\n    \"order_id\": \"{{$randomUUID}}\",\r\n    \"data\": {\r\n        \"amount\": {{amount}},\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"{{$randomUUID}}\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$randomUUID}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT_AUTHORIZATION\",\r\n            \"transaction_type\": \"FULL\",\r\n            \"number_installments\": 1,\r\n            \"soft_descriptor\": \"MINHA*LOJA\",\r\n            \"dynamic_mcc\": \"1234\",\r\n            \"card\": {\r\n                \"number\": \"4025240000000943\",\r\n                \"entry_mode\": \"chip\",\r\n                \"emv\": \"9f2701809f3303e0f8c8950580000080009f37045d21705a9f100706010a03a0b8089f2608819ba36f3f7934149f360205b782021c009c01009f1a0204849a032002279f02060000000309605F2A0200325f3401019f34031e03009f120c56495341204352454449544f5f201a2f435249535449414e2047414c494e444f2043484156455a2020\",\r\n                \"track_2\": \"4025240000000943=102828102800006930\"\r\n            }\r\n        }\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "(CL and AR) Payments with cuotas",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "//Cards AR\r",
+                      "//    6502720013589570 - CABAL (cvv 699 validade 11/29)\r",
+                      "//    6500870076437051 - CABAL (cvv 254 validade 11/29)\r",
+                      "//    5895625664145911 - NARANJA\r",
+                      "//    373953192351004  - AMEX (cvv 7386 validade 12/25)\r",
+                      "//    4123220000000909 - VISA CREDIT\r",
+                      "//\t  4231390000011336 - VISA CREDIT\r",
+                      "//\t  4517510000000931 - VISA DEBIT\r",
+                      "//    5308418330410236 - MASTER CREDIT\r",
+                      "//\t  5491800000000537 - MASTER DEBIT\r",
+                      "//    Card CL\r",
+                      "//    5213120418132948 - Mastercard domestico\r",
+                      "//    5110420000006938 - Mastercard internacional\r",
+                      "//    4508830000001759 - Visa domestico\r",
+                      "//    4025240000000948 - Visa internacional \r",
+                      "//    37667202091579261 - Amex internacional \r",
+                      "//    Cards MX\r",
+                      "//    5188999100986013 - Mastercard - Credito\r",
+                      "//    4931350008098878 - Visa - Credito\r",
+                      "//    5062650005970377 - Carnet (Nacional) - Débito\r",
+                      "//    376674798472005  - Amex (cvv 5595 validade 02/26) \r",
+                      "//    6510000000000810 - Discover (Nacional) - Credito\r",
+                      "//    Cartão BR \r",
+                      "//    5155901222280001 - MASTERCARD\r",
+                      "//    4012001037141112 - VISA\r",
+                      "//    4705980000007171 - VISA PARCELADO\r",
+                      "//    "
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$randomUUID}}\",\r\n    \"request_id\": \"{{$randomUUID}}\",\r\n    \"order_id\": \"{{$randomUUID}}\",\r\n    \"data\": {\r\n        \"amount\": 1000,\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"{{$randomUUID}}\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$randomUUID}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT\",\r\n            \"transaction_type\": \"INSTALL_NO_INTEREST\",\r\n            \"number_installments\": 6,\r\n            \"soft_descriptor\": \"MINHA*LOJA\",\r\n            \"dynamic_mcc\": \"1234\",\r\n            \"card\": {\r\n                \"number\": \"5491800000000539\",\r\n                \"expiration_month\": \"10\",\r\n                \"expiration_year\": \"28\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"entry_mode\": \"chip\",\r\n                \"emv\": \"9f2701809f3303e0f8c8950580000080009f37045d21705a9f100706010a03a0b8089f2608819ba36f3f7934149f360205b782021c009c01009f1a0204849a032002279f02060000000309605F2A0200325f3401019f34031e03009f120c56495341204352454449544f5f201a2f435249535449414e2047414c494e444f2043484156455a2020\",\r\n                \"track_2\": \"5491800000000539=12281110000000001230\"\r\n            }\r\n        },\r\n        \"additional_data\": {\r\n            \"installment\": {\r\n                \"quote_id\": \"{{quote_id}}\",\r\n                \"schema\": \"{{schema}}\"\r\n            }\r\n        }\r\n    }\r\n}\r\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "(BR and MX)Payments with Installments",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "// Brazil - CPF\r",
+                      "\r",
+                      "function gera_random(n) {\r",
+                      "    const ranNum = Math.round(Math.random()*n);\r",
+                      "    return ranNum;\r",
+                      "}\r",
+                      "function mod(dividendo,divisor) {\r",
+                      "    return Math.round(dividendo - (Math.floor(dividendo/divisor)*divisor));\r",
+                      "}\r",
+                      "function gera_cpf() {\r",
+                      "    const n = 9;\r",
+                      "    const n1 = gera_random(n);\r",
+                      "    const n2 = gera_random(n);\r",
+                      "    const n3 = gera_random(n);\r",
+                      "    const n4 = gera_random(n);\r",
+                      "    const n5 = gera_random(n);\r",
+                      "    const n6 = gera_random(n);\r",
+                      "    const n7 = gera_random(n);\r",
+                      "    const n8 = gera_random(n);\r",
+                      "    const n9 = gera_random(n);\r",
+                      "    let d1 = n9*2+n8*3+n7*4+n6*5+n5*6+n4*7+n3*8+n2*9+n1*10;\r",
+                      "    d1 = 11 - (mod(d1,11));\r",
+                      "    if (d1>=10) d1 = 0;\r",
+                      "    let d2 = d1*2+n9*3+n8*4+n7*5+n6*6+n5*7+n4*8+n3*9+n2*10+n1*11;\r",
+                      "    d2 = 11 - (mod(d2,11));\r",
+                      "    \r",
+                      "    if (d2>=10) d2 = 0;         \r",
+                      "      \r",
+                      "    return ''+n1+n2+n3+n4+n5+n6+n7+n8+n9+d1+d2;\r",
+                      "}\r",
+                      "\r",
+                      "// Argentina - DNI\r",
+                      "\r",
+                      "function rand_dni() {\r",
+                      "  num = Math.floor( ( Math.random() * 100000000 ) );\r",
+                      "  sNum = formatNumberLength( num, 8 );\r",
+                      "  return sNum + charDNI( sNum );\r",
+                      "}\r",
+                      "\r",
+                      "function formatNumberLength(num, length) {\r",
+                      "  var r = \"\" + num;\r",
+                      "  while ( r.length < length ) {\r",
+                      "    r = \"0\" + r;\r",
+                      "  }\r",
+                      "  return r;\r",
+                      "}\r",
+                      "\r",
+                      "function charDNI(dni) {\r",
+                      "  var chain = \"TRWAGMYFPDXBNJZSQVHLCKET\";\r",
+                      "  var pos = dni % 23;\r",
+                      "  var letter = chain.substring( pos, pos + 1 );\r",
+                      "  return letter;\r",
+                      "}\r",
+                      "\r",
+                      "// Chile - RUT\r",
+                      "\r",
+                      "function getRutNumbers(numberOfRuts=10, minValue=1e6, maxValue=4e7) {\r",
+                      "  let ruts = [];\r",
+                      "  \r",
+                      "  const rutOpts = {\r",
+                      "    quantity: numberOfRuts,\r",
+                      "    minValue: minValue,\r",
+                      "    maxValue: maxValue\r",
+                      "  };\r",
+                      "\r",
+                      "  function generateRuts() {\r",
+                      "    var e, n, r, u, i;\r",
+                      "    n = [];\r",
+                      "    t = 0;\r",
+                      "    while (t < rutOpts.quantity) {\r",
+                      "      i = getRandomNumber();\r",
+                      "      r = 0;\r",
+                      "      e = false;\r",
+                      "      while (r < n.length) {\r",
+                      "        if (n[r].number === i) {\r",
+                      "          e = true;\r",
+                      "          break\r",
+                      "        }\r",
+                      "        r++\r",
+                      "      }\r",
+                      "      if (!e) {\r",
+                      "        u = getMod(i);\r",
+                      "        n.push({\r",
+                      "          number: i,\r",
+                      "          mod: u\r",
+                      "        })\r",
+                      "      }\r",
+                      "      t++;\r",
+                      "    }\r",
+                      "    return ruts = n\r",
+                      "  };\r",
+                      "\r",
+                      "  function getRandomNumber() {\r",
+                      "    var t, e, n, r;\r",
+                      "    r = rutOpts.minValue;\r",
+                      "    n = rutOpts.maxValue;\r",
+                      "    e = parseInt(t);\r",
+                      "    if (!e) {\r",
+                      "      return Math.floor(Math.random() * (n - r + 1)) + r\r",
+                      "    } else {\r",
+                      "      return e\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "  function getMod(t) {\r",
+                      "    var e, n;\r",
+                      "    e = 0;\r",
+                      "    n = 1;\r",
+                      "    while (t) {\r",
+                      "      n = (n + t % 10 * (9 - e++ % 6)) % 11;\r",
+                      "      t = Math.floor(t / 10)\r",
+                      "    }\r",
+                      "    if (n) {\r",
+                      "      return n - 1\r",
+                      "    } else {\r",
+                      "      return \"K\"\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "\r",
+                      "  let generatedRuts = generateRuts().map(rut => `${rut.number}-${rut.mod}`)\r",
+                      "  if (generatedRuts.length === 1) { \r",
+                      "    return generatedRuts[0];\r",
+                      "  }\r",
+                      "  return generatedRuts;\r",
+                      "}\r",
+                      "\r",
+                      "// Tipo de documentos\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"CPF\"){\r",
+                      "    pm.environment.set(\"document_number\", gera_cpf());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"DNI_AR\"){\r",
+                      "    pm.environment.set(\"document_number\", rand_dni());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"RUT\"){\r",
+                      "    pm.environment.set(\"document_number\", getRutNumbers(1));\r",
+                      "}\r",
+                      ""
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$randomUUID}}\",\r\n    \"request_id\": \"{{$randomUUID}}\",\r\n    \"order_id\": \"{{$randomUUID}}\",\r\n    \"data\": {\r\n        \"amount\": 12000,\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"{{$randomUUID}}\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$randomUUID}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT\",\r\n            \"transaction_type\": \"FULL\",\r\n            \"number_installments\": 1,\r\n            \"soft_descriptor\": \"MINHA*LOJA\",\r\n            \"dynamic_mcc\": \"1234\",\r\n            \"card\": {\r\n                \"number\": \"5155901222280001\",\r\n                \"entry_mode\": \"chip\",\r\n                \"seq_number\": \"999\",\r\n                \"emv\": \"9f2701809f3303e0f8c8950580000080009f37045d21705a9f100706010a03a0b8089f2608819ba36f3f7934149f360205b782021c009c01009f1a0204849a032002279f02060000000309605F2A0200325f3401019f34031e03009f120c56495341204352454449544f5f201a2f435249535449414e2047414c494e444f2043484156455a2020\",\r\n                \"aid\": \"maxLength: 255\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"aggregator\": \"siscard\",\r\n                \"track_1\": \"4547894733333338^/CRISTOBAL GALINDO CISNERO^23072010000000518000000\",\r\n                \"track_2\": \"5155901222280001=301220111379456001\",\r\n                \"service_code\": {\r\n                    \"interchange\": \"international\",\r\n                    \"chip\": true,\r\n                    \"authorization_process\": \"normal_rules\",\r\n                    \"pin_required\": \"required\",\r\n                    \"range_of_services\": \"no_restrictions\"\r\n                }\r\n            }\r\n        },\r\n        \"additional_data\": {\r\n            \"device\": {\r\n                \"ip_address\": \"10.191.62.9\",\r\n                \"device_id\": \"TESTE_PLATAFORMA_DIGITAL_ANTIFRAUDE_2023\"\r\n            },\r\n            \"customer\": {\r\n                \"shippings\": {\r\n                    \"address\": {\r\n                        \"street\": \"Avenida Mexico\",\r\n                        \"number\": \"100\",\r\n                        \"complement\": \"\",\r\n                        \"district\": \"Progreso\",\r\n                        \"city\": \"Acapulco\",\r\n                        \"state\": \"Guerrero\",\r\n                        \"country\": \"Mexico\",\r\n                        \"postal_code\": \"39300\",\r\n                        \"type\": \"RESIDENCIAL\"\r\n                    }\r\n                },\r\n                \"customer_id\": \"72982307006\",\r\n                \"document_type\": \"rut\",\r\n                \"document_number\": \"{{document_number}}\",\r\n                \"first_name\": \"teste\",\r\n                \"last_name\": \"teste\",\r\n                \"name\": \"teste teste\",\r\n                \"email\": \"{{EMAIL_CUSTOMER}}\",\r\n                \"phone_number\": \"11923456789\",\r\n                \"billing_address\": {\r\n                    \"street\": \"Avenida Mexico\",\r\n                    \"number\": \"100\",\r\n                    \"complement\": \"\",\r\n                    \"district\": \"Progreso\",\r\n                    \"city\": \"Acapulco\",\r\n                    \"state\": \"Guerrero\",\r\n                    \"country\": \"Mexico\",\r\n                    \"postal_code\": \"39300\",\r\n                    \"type\": \"RESIDENCIAL\"\r\n                }\r\n            },\r\n            \"order\": {\r\n                \"items\": [\r\n                    {\r\n                        \"name\": \"Climatizador de Ar Cadence Climatize Compact CLI30\",\r\n                        \"quantity\": 1,\r\n                        \"sku\": \"11835803\",\r\n                        \"price\": 412.0\r\n                    }\r\n                ]\r\n            }\r\n        }\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Capture V2",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"payment_id\": \"{{payment_id}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments/capture",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments", "capture"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel V2",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"payment_id\": \"{{payment_id}}\",\r\n    \"amount\": {{amount}},\r\n    \"payment_method\": \"{{payment_method}}\",\r\n    \"custom_key\": \"Cancelamento_teste_{{$randomAlphaNumeric}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments/cancel",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments", "cancel"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Payment info",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/hub-payment-info/v1/payments/info/73de2913-acc7-4b31-a8b9-c5861eab079a",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "hub-payment-info", "v1", "payments", "info", "73de2913-acc7-4b31-a8b9-c5861eab079a"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "payments with Antifraud",
+          "item": [
+            {
+              "name": "Payments Antifraud DEBIT",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Should return status 201 and not be empty\", () => {\r",
+                      "    var data = JSON.parse(responseBody);\r",
+                      "    pm.environment.set(\"number_token\", data.number_token);\r",
+                      "    //console.log(pm.environment.get('token_visa'))\r",
+                      "  });\r",
+                      "\r",
+                      "\r",
+                      "// Brazil - CPF\r",
+                      "\r",
+                      "function gera_random(n) {\r",
+                      "    const ranNum = Math.round(Math.random()*n);\r",
+                      "    return ranNum;\r",
+                      "}\r",
+                      "function mod(dividendo,divisor) {\r",
+                      "    return Math.round(dividendo - (Math.floor(dividendo/divisor)*divisor));\r",
+                      "}\r",
+                      "function gera_cpf() {\r",
+                      "    const n = 9;\r",
+                      "    const n1 = gera_random(n);\r",
+                      "    const n2 = gera_random(n);\r",
+                      "    const n3 = gera_random(n);\r",
+                      "    const n4 = gera_random(n);\r",
+                      "    const n5 = gera_random(n);\r",
+                      "    const n6 = gera_random(n);\r",
+                      "    const n7 = gera_random(n);\r",
+                      "    const n8 = gera_random(n);\r",
+                      "    const n9 = gera_random(n);\r",
+                      "    let d1 = n9*2+n8*3+n7*4+n6*5+n5*6+n4*7+n3*8+n2*9+n1*10;\r",
+                      "    d1 = 11 - (mod(d1,11));\r",
+                      "    if (d1>=10) d1 = 0;\r",
+                      "    let d2 = d1*2+n9*3+n8*4+n7*5+n6*6+n5*7+n4*8+n3*9+n2*10+n1*11;\r",
+                      "    d2 = 11 - (mod(d2,11));\r",
+                      "    \r",
+                      "    if (d2>=10) d2 = 0;         \r",
+                      "      \r",
+                      "    return ''+n1+n2+n3+n4+n5+n6+n7+n8+n9+d1+d2;\r",
+                      "}\r",
+                      "\r",
+                      "// Argentina - DNI\r",
+                      "\r",
+                      "function rand_dni() {\r",
+                      "  num = Math.floor( ( Math.random() * 100000000 ) );\r",
+                      "  sNum = formatNumberLength( num, 8 );\r",
+                      "  return sNum + charDNI( sNum );\r",
+                      "}\r",
+                      "\r",
+                      "function formatNumberLength(num, length) {\r",
+                      "  var r = \"\" + num;\r",
+                      "  while ( r.length < length ) {\r",
+                      "    r = \"0\" + r;\r",
+                      "  }\r",
+                      "  return r;\r",
+                      "}\r",
+                      "\r",
+                      "function charDNI(dni) {\r",
+                      "  var chain = \"TRWAGMYFPDXBNJZSQVHLCKET\";\r",
+                      "  var pos = dni % 23;\r",
+                      "  var letter = chain.substring( pos, pos + 1 );\r",
+                      "  return letter;\r",
+                      "}\r",
+                      "\r",
+                      "// Chile - RUT\r",
+                      "\r",
+                      "function getRutNumbers(numberOfRuts=10, minValue=1e6, maxValue=4e7) {\r",
+                      "  let ruts = [];\r",
+                      "  \r",
+                      "  const rutOpts = {\r",
+                      "    quantity: numberOfRuts,\r",
+                      "    minValue: minValue,\r",
+                      "    maxValue: maxValue\r",
+                      "  };\r",
+                      "\r",
+                      "  function generateRuts() {\r",
+                      "    var e, n, r, u, i;\r",
+                      "    n = [];\r",
+                      "    t = 0;\r",
+                      "    while (t < rutOpts.quantity) {\r",
+                      "      i = getRandomNumber();\r",
+                      "      r = 0;\r",
+                      "      e = false;\r",
+                      "      while (r < n.length) {\r",
+                      "        if (n[r].number === i) {\r",
+                      "          e = true;\r",
+                      "          break\r",
+                      "        }\r",
+                      "        r++\r",
+                      "      }\r",
+                      "      if (!e) {\r",
+                      "        u = getMod(i);\r",
+                      "        n.push({\r",
+                      "          number: i,\r",
+                      "          mod: u\r",
+                      "        })\r",
+                      "      }\r",
+                      "      t++;\r",
+                      "    }\r",
+                      "    return ruts = n\r",
+                      "  };\r",
+                      "\r",
+                      "  function getRandomNumber() {\r",
+                      "    var t, e, n, r;\r",
+                      "    r = rutOpts.minValue;\r",
+                      "    n = rutOpts.maxValue;\r",
+                      "    e = parseInt(t);\r",
+                      "    if (!e) {\r",
+                      "      return Math.floor(Math.random() * (n - r + 1)) + r\r",
+                      "    } else {\r",
+                      "      return e\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "  function getMod(t) {\r",
+                      "    var e, n;\r",
+                      "    e = 0;\r",
+                      "    n = 1;\r",
+                      "    while (t) {\r",
+                      "      n = (n + t % 10 * (9 - e++ % 6)) % 11;\r",
+                      "      t = Math.floor(t / 10)\r",
+                      "    }\r",
+                      "    if (n) {\r",
+                      "      return n - 1\r",
+                      "    } else {\r",
+                      "      return \"K\"\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "\r",
+                      "  let generatedRuts = generateRuts().map(rut => `${rut.number}-${rut.mod}`)\r",
+                      "  if (generatedRuts.length === 1) { \r",
+                      "    return generatedRuts[0];\r",
+                      "  }\r",
+                      "  return generatedRuts;\r",
+                      "}\r",
+                      "\r",
+                      "// Tipo de documentos\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"CPF\"){\r",
+                      "    pm.environment.set(\"document_number\", gera_cpf());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"DNI_AR\"){\r",
+                      "    pm.environment.set(\"document_number\", rand_dni());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"RUT\"){\r",
+                      "    pm.environment.set(\"document_number\", getRutNumbers(1));\r",
+                      "}\r",
+                      ""
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"order_id\": \"{{$guid}}\",\r\n    \"data\": {\r\n        \"amount\": 41200,\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"marcos_13\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$guid}}\",\r\n            \"payment_method\": \"DIRECT_DEBIT\",\r\n            \"save_card_data\": false,\r\n            \"transaction_type\": \"FULL\",\r\n            \"number_installments\": 1,\r\n            \"card\": {\r\n                \"security_code\": \"999\",\r\n                \"entry_mode\": \"chip\",\r\n                \"seq_number\": \"999\",\r\n                \"pin_block\": \"1234567890123456\",\r\n                \"pin_key_id\": \"6c1dc01b-0889-4bd0-aa72-74205fa06ef3\",\r\n                \"ksn\": \"maxLength: 20\",\r\n                \"emv\": \"maxLength: 510\",\r\n                \"aid\": \"maxLength: 255\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"aggregator\": \"siscard\",\r\n                \"service_code\": {\r\n                    \"interchange\": \"international\",\r\n                    \"chip\": true,\r\n                    \"authorization_process\": \"normal_rules\",\r\n                    \"pin_required\": \"required\",\r\n                    \"range_of_services\": \"no_restrictions\"\r\n                },\r\n                \"track_1\": \"kE172393918657757^TDIhvtDtWo]cA%BNp\\\\H^D5;>S ^'b1e7v(#^J)P*3p\",\r\n                \"track_2\": \"31=688920113116588600773528600895355929922256637311527313872595069890598092676292704006176031988364378ex/\\\"=$=OfA7H~%Ri\\\"rZADPTLH9x.rw0Y O87492w9GizfkM60iwwHBrciSd2vD?u/:\"\r\n            }\r\n        },\r\n        \"additional_data\": {\r\n            \"tip\": {\r\n                \"value\": 0,\r\n                \"partial_amount\": 0,\r\n                \"waiter_code\": \"pwAzCcdkcDyxRIQWIWzfG2eRI1KvhfKBS1r0g5qh\"\r\n            },\r\n            \"dynamic_currency_conversion\": {\r\n                \"currency\": \"AED\",\r\n                \"amount\": 1,\r\n                \"conversion_rate\": \"string\",\r\n                \"date\": \"string\",\r\n                \"markup\": 9999,\r\n                \"source\": {\r\n                    \"id\": \"string\",\r\n                    \"name\": \"string\"\r\n                }\r\n            },\r\n            \"device\": {\r\n                \"ip_address\": \"10.191.62.9\",\r\n                \"device_id\": \"TESTE_PLATAFORMA_DIGITAL_ANTIFRAUDE_2023\"\r\n            },\r\n            \"customer\": {\r\n                \"shippings\": {\r\n                    \"address\": {\r\n                        \"street\": \"Avenida Mexico\",\r\n                        \"number\": \"100\",\r\n                        \"complement\": \"\",\r\n                        \"district\": \"Progreso\",\r\n                        \"city\": \"Acapulco\",\r\n                        \"state\": \"Guerrero\",\r\n                        \"country\": \"Mexico\",\r\n                        \"postal_code\": \"39300\",\r\n                        \"type\": \"RESIDENCIAL\"\r\n                    }\r\n                },\r\n                \"customer_id\": \"72982307006\",\r\n                \"document_type\": \"{{document_type}}\",\r\n                \"document_number\": \"{{document_number}}\",\r\n                \"first_name\": \"teste\",\r\n                \"last_name\": \"teste\",\r\n                \"name\": \"teste teste\",\r\n                \"email\": \"{{EMAIL_CUSTOMER}}\",\r\n                \"phone_number\": \"11923456789\",\r\n                \"billing_address\": {\r\n                    \"street\": \"Avenida Mexico\",\r\n                    \"number\": \"100\",\r\n                    \"complement\": \"\",\r\n                    \"district\": \"Progreso\",\r\n                    \"city\": \"Acapulco\",\r\n                    \"state\": \"Guerrero\",\r\n                    \"country\": \"Mexico\",\r\n                    \"postal_code\": \"39300\",\r\n                    \"type\": \"RESIDENCIAL\"\r\n                }\r\n            },\r\n            \"order\": {\r\n                \"items\": [\r\n                    {\r\n                        \"name\": \"Climatizador de Ar Cadence Climatize Compact CLI30\",\r\n                        \"quantity\": 1,\r\n                        \"sku\": \"11835803\",\r\n                        \"price\": 412.0\r\n                    }\r\n                ]\r\n            }\r\n        }\r\n    }\r\n}"
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Payments Antifraud V2 CREDIT",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Should return status 201 and not be empty\", () => {\r",
+                      "    var data = JSON.parse(responseBody);\r",
+                      "    pm.environment.set(\"number_token\", data.number_token);\r",
+                      "    //console.log(pm.environment.get('token_visa'))\r",
+                      "  });\r",
+                      "\r",
+                      "\r",
+                      "// Brazil - CPF\r",
+                      "\r",
+                      "function gera_random(n) {\r",
+                      "    const ranNum = Math.round(Math.random()*n);\r",
+                      "    return ranNum;\r",
+                      "}\r",
+                      "function mod(dividendo,divisor) {\r",
+                      "    return Math.round(dividendo - (Math.floor(dividendo/divisor)*divisor));\r",
+                      "}\r",
+                      "function gera_cpf() {\r",
+                      "    const n = 9;\r",
+                      "    const n1 = gera_random(n);\r",
+                      "    const n2 = gera_random(n);\r",
+                      "    const n3 = gera_random(n);\r",
+                      "    const n4 = gera_random(n);\r",
+                      "    const n5 = gera_random(n);\r",
+                      "    const n6 = gera_random(n);\r",
+                      "    const n7 = gera_random(n);\r",
+                      "    const n8 = gera_random(n);\r",
+                      "    const n9 = gera_random(n);\r",
+                      "    let d1 = n9*2+n8*3+n7*4+n6*5+n5*6+n4*7+n3*8+n2*9+n1*10;\r",
+                      "    d1 = 11 - (mod(d1,11));\r",
+                      "    if (d1>=10) d1 = 0;\r",
+                      "    let d2 = d1*2+n9*3+n8*4+n7*5+n6*6+n5*7+n4*8+n3*9+n2*10+n1*11;\r",
+                      "    d2 = 11 - (mod(d2,11));\r",
+                      "    \r",
+                      "    if (d2>=10) d2 = 0;         \r",
+                      "      \r",
+                      "    return ''+n1+n2+n3+n4+n5+n6+n7+n8+n9+d1+d2;\r",
+                      "}\r",
+                      "\r",
+                      "// Argentina - DNI\r",
+                      "\r",
+                      "function rand_dni() {\r",
+                      "  num = Math.floor( ( Math.random() * 100000000 ) );\r",
+                      "  sNum = formatNumberLength( num, 8 );\r",
+                      "  return sNum + charDNI( sNum );\r",
+                      "}\r",
+                      "\r",
+                      "function formatNumberLength(num, length) {\r",
+                      "  var r = \"\" + num;\r",
+                      "  while ( r.length < length ) {\r",
+                      "    r = \"0\" + r;\r",
+                      "  }\r",
+                      "  return r;\r",
+                      "}\r",
+                      "\r",
+                      "function charDNI(dni) {\r",
+                      "  var chain = \"TRWAGMYFPDXBNJZSQVHLCKET\";\r",
+                      "  var pos = dni % 23;\r",
+                      "  var letter = chain.substring( pos, pos + 1 );\r",
+                      "  return letter;\r",
+                      "}\r",
+                      "\r",
+                      "// Chile - RUT\r",
+                      "\r",
+                      "function getRutNumbers(numberOfRuts=10, minValue=1e6, maxValue=4e7) {\r",
+                      "  let ruts = [];\r",
+                      "  \r",
+                      "  const rutOpts = {\r",
+                      "    quantity: numberOfRuts,\r",
+                      "    minValue: minValue,\r",
+                      "    maxValue: maxValue\r",
+                      "  };\r",
+                      "\r",
+                      "  function generateRuts() {\r",
+                      "    var e, n, r, u, i;\r",
+                      "    n = [];\r",
+                      "    t = 0;\r",
+                      "    while (t < rutOpts.quantity) {\r",
+                      "      i = getRandomNumber();\r",
+                      "      r = 0;\r",
+                      "      e = false;\r",
+                      "      while (r < n.length) {\r",
+                      "        if (n[r].number === i) {\r",
+                      "          e = true;\r",
+                      "          break\r",
+                      "        }\r",
+                      "        r++\r",
+                      "      }\r",
+                      "      if (!e) {\r",
+                      "        u = getMod(i);\r",
+                      "        n.push({\r",
+                      "          number: i,\r",
+                      "          mod: u\r",
+                      "        })\r",
+                      "      }\r",
+                      "      t++;\r",
+                      "    }\r",
+                      "    return ruts = n\r",
+                      "  };\r",
+                      "\r",
+                      "  function getRandomNumber() {\r",
+                      "    var t, e, n, r;\r",
+                      "    r = rutOpts.minValue;\r",
+                      "    n = rutOpts.maxValue;\r",
+                      "    e = parseInt(t);\r",
+                      "    if (!e) {\r",
+                      "      return Math.floor(Math.random() * (n - r + 1)) + r\r",
+                      "    } else {\r",
+                      "      return e\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "  function getMod(t) {\r",
+                      "    var e, n;\r",
+                      "    e = 0;\r",
+                      "    n = 1;\r",
+                      "    while (t) {\r",
+                      "      n = (n + t % 10 * (9 - e++ % 6)) % 11;\r",
+                      "      t = Math.floor(t / 10)\r",
+                      "    }\r",
+                      "    if (n) {\r",
+                      "      return n - 1\r",
+                      "    } else {\r",
+                      "      return \"K\"\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "\r",
+                      "  let generatedRuts = generateRuts().map(rut => `${rut.number}-${rut.mod}`)\r",
+                      "  if (generatedRuts.length === 1) { \r",
+                      "    return generatedRuts[0];\r",
+                      "  }\r",
+                      "  return generatedRuts;\r",
+                      "}\r",
+                      "\r",
+                      "// Tipo de documentos\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"CPF\"){\r",
+                      "    pm.environment.set(\"document_number\", gera_cpf());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"DNI_AR\"){\r",
+                      "    pm.environment.set(\"document_number\", rand_dni());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"RUT\"){\r",
+                      "    pm.environment.set(\"document_number\", getRutNumbers(1));\r",
+                      "}\r",
+                      ""
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"order_id\": \"{{$guid}}\",\r\n    \"data\": {\r\n        \"amount\": 41200,\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"marcos_13\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$guid}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT\",\r\n            \"save_card_data\": false,\r\n            \"transaction_type\": \"FULL\",\r\n            \"number_installments\": 1,\r\n            \"card\": {\r\n                \"security_code\": \"999\",\r\n                \"entry_mode\": \"chip\",\r\n                \"seq_number\": \"999\",\r\n                \"pin_block\": \"1234567890123456\",\r\n                \"pin_key_id\": \"6c1dc01b-0889-4bd0-aa72-74205fa06ef3\",\r\n                \"ksn\": \"maxLength: 20\",\r\n                \"emv\": \"maxLength: 510\",\r\n                \"aid\": \"maxLength: 255\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"aggregator\": \"siscard\",\r\n                \"service_code\": {\r\n                    \"interchange\": \"international\",\r\n                    \"chip\": true,\r\n                    \"authorization_process\": \"normal_rules\",\r\n                    \"pin_required\": \"required\",\r\n                    \"range_of_services\": \"no_restrictions\"\r\n                },\r\n                \"track_1\": \"kE172393918657757^TDIhvtDtWo]cA%BNp\\\\H^D5;>S ^'b1e7v(#^J)P*3p\",\r\n                \"track_2\": \"31=688920113116588600773528600895355929922256637311527313872595069890598092676292704006176031988364378ex/\\\"=$=OfA7H~%Ri\\\"rZADPTLH9x.rw0Y O87492w9GizfkM60iwwHBrciSd2vD?u/:\"\r\n            }\r\n        },\r\n        \"additional_data\": {\r\n            \"tip\": {\r\n                \"value\": 0,\r\n                \"partial_amount\": 0,\r\n                \"waiter_code\": \"pwAzCcdkcDyxRIQWIWzfG2eRI1KvhfKBS1r0g5qh\"\r\n            },\r\n            \"dynamic_currency_conversion\": {\r\n                \"currency\": \"AED\",\r\n                \"amount\": 1,\r\n                \"conversion_rate\": \"string\",\r\n                \"date\": \"string\",\r\n                \"markup\": 9999,\r\n                \"source\": {\r\n                    \"id\": \"string\",\r\n                    \"name\": \"string\"\r\n                }\r\n            },\r\n            \"device\": {\r\n                \"ip_address\": \"10.191.62.9\",\r\n                \"device_id\": \"TESTE_PLATAFORMA_DIGITAL_ANTIFRAUDE_2023\"\r\n            },\r\n            \"customer\": {\r\n                \"shippings\": {\r\n                    \"address\": {\r\n                        \"street\": \"Avenida Mexico\",\r\n                        \"number\": \"100\",\r\n                        \"complement\": \"\",\r\n                        \"district\": \"Progreso\",\r\n                        \"city\": \"Acapulco\",\r\n                        \"state\": \"Guerrero\",\r\n                        \"country\": \"Mexico\",\r\n                        \"postal_code\": \"39300\",\r\n                        \"type\": \"RESIDENCIAL\"\r\n                    }\r\n                },\r\n                \"customer_id\": \"72982307006\",\r\n                \"document_type\": \"{{document_type}}\",\r\n                \"document_number\": \"{{document_number}}\",\r\n                \"first_name\": \"teste\",\r\n                \"last_name\": \"teste\",\r\n                \"name\": \"teste teste\",\r\n                \"email\": \"{{EMAIL_CUSTOMER}}\",\r\n                \"phone_number\": \"11923456789\",\r\n                \"billing_address\": {\r\n                    \"street\": \"Avenida Mexico\",\r\n                    \"number\": \"100\",\r\n                    \"complement\": \"\",\r\n                    \"district\": \"Progreso\",\r\n                    \"city\": \"Acapulco\",\r\n                    \"state\": \"Guerrero\",\r\n                    \"country\": \"Mexico\",\r\n                    \"postal_code\": \"39300\",\r\n                    \"type\": \"RESIDENCIAL\"\r\n                }\r\n            },\r\n            \"order\": {\r\n                \"items\": [\r\n                    {\r\n                        \"name\": \"Climatizador de Ar Cadence Climatize Compact CLI30\",\r\n                        \"quantity\": 1,\r\n                        \"sku\": \"11835803\",\r\n                        \"price\": 412.0\r\n                    }\r\n                ]\r\n            }\r\n        }\r\n    }\r\n}"
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "(BR and MX) Payments Antifraud CREDIT With installments",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Should return status 201 and not be empty\", () => {\r",
+                      "    var data = JSON.parse(responseBody);\r",
+                      "    pm.environment.set(\"number_token\", data.number_token);\r",
+                      "    //console.log(pm.environment.get('token_visa'))\r",
+                      "  });\r",
+                      "\r",
+                      "\r",
+                      "// Brazil - CPF\r",
+                      "\r",
+                      "function gera_random(n) {\r",
+                      "    const ranNum = Math.round(Math.random()*n);\r",
+                      "    return ranNum;\r",
+                      "}\r",
+                      "function mod(dividendo,divisor) {\r",
+                      "    return Math.round(dividendo - (Math.floor(dividendo/divisor)*divisor));\r",
+                      "}\r",
+                      "function gera_cpf() {\r",
+                      "    const n = 9;\r",
+                      "    const n1 = gera_random(n);\r",
+                      "    const n2 = gera_random(n);\r",
+                      "    const n3 = gera_random(n);\r",
+                      "    const n4 = gera_random(n);\r",
+                      "    const n5 = gera_random(n);\r",
+                      "    const n6 = gera_random(n);\r",
+                      "    const n7 = gera_random(n);\r",
+                      "    const n8 = gera_random(n);\r",
+                      "    const n9 = gera_random(n);\r",
+                      "    let d1 = n9*2+n8*3+n7*4+n6*5+n5*6+n4*7+n3*8+n2*9+n1*10;\r",
+                      "    d1 = 11 - (mod(d1,11));\r",
+                      "    if (d1>=10) d1 = 0;\r",
+                      "    let d2 = d1*2+n9*3+n8*4+n7*5+n6*6+n5*7+n4*8+n3*9+n2*10+n1*11;\r",
+                      "    d2 = 11 - (mod(d2,11));\r",
+                      "    \r",
+                      "    if (d2>=10) d2 = 0;         \r",
+                      "      \r",
+                      "    return ''+n1+n2+n3+n4+n5+n6+n7+n8+n9+d1+d2;\r",
+                      "}\r",
+                      "\r",
+                      "// Argentina - DNI\r",
+                      "\r",
+                      "function rand_dni() {\r",
+                      "  num = Math.floor( ( Math.random() * 100000000 ) );\r",
+                      "  sNum = formatNumberLength( num, 8 );\r",
+                      "  return sNum + charDNI( sNum );\r",
+                      "}\r",
+                      "\r",
+                      "function formatNumberLength(num, length) {\r",
+                      "  var r = \"\" + num;\r",
+                      "  while ( r.length < length ) {\r",
+                      "    r = \"0\" + r;\r",
+                      "  }\r",
+                      "  return r;\r",
+                      "}\r",
+                      "\r",
+                      "function charDNI(dni) {\r",
+                      "  var chain = \"TRWAGMYFPDXBNJZSQVHLCKET\";\r",
+                      "  var pos = dni % 23;\r",
+                      "  var letter = chain.substring( pos, pos + 1 );\r",
+                      "  return letter;\r",
+                      "}\r",
+                      "\r",
+                      "// Chile - RUT\r",
+                      "\r",
+                      "function getRutNumbers(numberOfRuts=10, minValue=1e6, maxValue=4e7) {\r",
+                      "  let ruts = [];\r",
+                      "  \r",
+                      "  const rutOpts = {\r",
+                      "    quantity: numberOfRuts,\r",
+                      "    minValue: minValue,\r",
+                      "    maxValue: maxValue\r",
+                      "  };\r",
+                      "\r",
+                      "  function generateRuts() {\r",
+                      "    var e, n, r, u, i;\r",
+                      "    n = [];\r",
+                      "    t = 0;\r",
+                      "    while (t < rutOpts.quantity) {\r",
+                      "      i = getRandomNumber();\r",
+                      "      r = 0;\r",
+                      "      e = false;\r",
+                      "      while (r < n.length) {\r",
+                      "        if (n[r].number === i) {\r",
+                      "          e = true;\r",
+                      "          break\r",
+                      "        }\r",
+                      "        r++\r",
+                      "      }\r",
+                      "      if (!e) {\r",
+                      "        u = getMod(i);\r",
+                      "        n.push({\r",
+                      "          number: i,\r",
+                      "          mod: u\r",
+                      "        })\r",
+                      "      }\r",
+                      "      t++;\r",
+                      "    }\r",
+                      "    return ruts = n\r",
+                      "  };\r",
+                      "\r",
+                      "  function getRandomNumber() {\r",
+                      "    var t, e, n, r;\r",
+                      "    r = rutOpts.minValue;\r",
+                      "    n = rutOpts.maxValue;\r",
+                      "    e = parseInt(t);\r",
+                      "    if (!e) {\r",
+                      "      return Math.floor(Math.random() * (n - r + 1)) + r\r",
+                      "    } else {\r",
+                      "      return e\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "  function getMod(t) {\r",
+                      "    var e, n;\r",
+                      "    e = 0;\r",
+                      "    n = 1;\r",
+                      "    while (t) {\r",
+                      "      n = (n + t % 10 * (9 - e++ % 6)) % 11;\r",
+                      "      t = Math.floor(t / 10)\r",
+                      "    }\r",
+                      "    if (n) {\r",
+                      "      return n - 1\r",
+                      "    } else {\r",
+                      "      return \"K\"\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "\r",
+                      "  let generatedRuts = generateRuts().map(rut => `${rut.number}-${rut.mod}`)\r",
+                      "  if (generatedRuts.length === 1) { \r",
+                      "    return generatedRuts[0];\r",
+                      "  }\r",
+                      "  return generatedRuts;\r",
+                      "}\r",
+                      "\r",
+                      "// Tipo de documentos\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"CPF\"){\r",
+                      "    pm.environment.set(\"document_number\", gera_cpf());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"DNI_AR\"){\r",
+                      "    pm.environment.set(\"document_number\", rand_dni());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"RUT\"){\r",
+                      "    pm.environment.set(\"document_number\", getRutNumbers(1));\r",
+                      "}\r",
+                      ""
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"order_id\": \"{{$guid}}\",\r\n    \"data\": {\r\n        \"amount\": 41200,\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"marcos_13\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$guid}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT_AUTHORIZATION\",\r\n            \"save_card_data\": false,\r\n            \"transaction_type\": \"INSTALL_NO_INTEREST\",\r\n            \"number_installments\": 6,\r\n            \"card\": {\r\n                \"security_code\": \"999\",\r\n                \"entry_mode\": \"chip\",\r\n                \"seq_number\": \"999\",\r\n                \"pin_block\": \"1234567890123456\",\r\n                \"pin_key_id\": \"6c1dc01b-0889-4bd0-aa72-74205fa06ef3\",\r\n                \"ksn\": \"maxLength: 20\",\r\n                \"emv\": \"maxLength: 510\",\r\n                \"aid\": \"maxLength: 255\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"aggregator\": \"siscard\",\r\n                \"service_code\": {\r\n                    \"interchange\": \"international\",\r\n                    \"chip\": true,\r\n                    \"authorization_process\": \"normal_rules\",\r\n                    \"pin_required\": \"required\",\r\n                    \"range_of_services\": \"no_restrictions\"\r\n                },\r\n                \"track_1\": \"kE172393918657757^TDIhvtDtWo]cA%BNp\\\\H^D5;>S ^'b1e7v(#^J)P*3p\",\r\n                \"track_2\": \"31=688920113116588600773528600895355929922256637311527313872595069890598092676292704006176031988364378ex/\\\"=$=OfA7H~%Ri\\\"rZADPTLH9x.rw0Y O87492w9GizfkM60iwwHBrciSd2vD?u/:\"\r\n            }\r\n        },\r\n        \"additional_data\": {\r\n            \"tip\": {\r\n                \"value\": 0,\r\n                \"partial_amount\": 0,\r\n                \"waiter_code\": \"pwAzCcdkcDyxRIQWIWzfG2eRI1KvhfKBS1r0g5qh\"\r\n            },\r\n            \"dynamic_currency_conversion\": {\r\n                \"currency\": \"AED\",\r\n                \"amount\": 1,\r\n                \"conversion_rate\": \"string\",\r\n                \"date\": \"string\",\r\n                \"markup\": 9999,\r\n                \"source\": {\r\n                    \"id\": \"string\",\r\n                    \"name\": \"string\"\r\n                }\r\n            },\r\n            \"device\": {\r\n                \"ip_address\": \"10.191.62.9\",\r\n                \"device_id\": \"TESTE_PLATAFORMA_DIGITAL_ANTIFRAUDE_2023\"\r\n            },\r\n            \"customer\": {\r\n                \"shippings\": {\r\n                    \"address\": {\r\n                        \"street\": \"Avenida Mexico\",\r\n                        \"number\": \"100\",\r\n                        \"complement\": \"\",\r\n                        \"district\": \"Progreso\",\r\n                        \"city\": \"Acapulco\",\r\n                        \"state\": \"Guerrero\",\r\n                        \"country\": \"Mexico\",\r\n                        \"postal_code\": \"39300\",\r\n                        \"type\": \"RESIDENCIAL\"\r\n                    }\r\n                },\r\n                \"customer_id\": \"72982307006\",\r\n                \"document_type\": \"{{document_type}}\",\r\n                \"document_number\": \"{{document_number}}\",\r\n                \"first_name\": \"teste\",\r\n                \"last_name\": \"teste\",\r\n                \"name\": \"teste teste\",\r\n                \"email\": \"{{EMAIL_CUSTOMER}}\",\r\n                \"phone_number\": \"11923456789\",\r\n                \"billing_address\": {\r\n                    \"street\": \"Avenida Mexico\",\r\n                    \"number\": \"100\",\r\n                    \"complement\": \"\",\r\n                    \"district\": \"Progreso\",\r\n                    \"city\": \"Acapulco\",\r\n                    \"state\": \"Guerrero\",\r\n                    \"country\": \"Mexico\",\r\n                    \"postal_code\": \"39300\",\r\n                    \"type\": \"RESIDENCIAL\"\r\n                }\r\n            },\r\n            \"order\": {\r\n                \"items\": [\r\n                    {\r\n                        \"name\": \"Climatizador de Ar Cadence Climatize Compact CLI30\",\r\n                        \"quantity\": 1,\r\n                        \"sku\": \"11835803\",\r\n                        \"price\": 412.0\r\n                    }\r\n                ]\r\n            }\r\n        }\r\n    }\r\n}"
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Capture",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"payment_id\": \"{{payment_id}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments/capture",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments", "capture"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"payment_id\": \"{{payment_id}}\",\r\n    \"amount\": 1,\r\n    \"payment_method\": \"{{payment_method}}\",\r\n    \"custom_key\": \"Cancelamento_teste_{{$randomAlphaNumeric}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments/cancel",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments", "cancel"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Payment info",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/hub-payment-info/v1/payments/info/{{payment_id}}",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "hub-payment-info", "v1", "payments", "info", "{{payment_id}}"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "(AR and CL)Quotes",
+          "item": [
+            {
+              "name": "(AR and CL) Quotes",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "// Recupera o schema e quote_id da resposta \r",
+                      "const jsonData = JSON.parse(responseBody);\r",
+                      "pm.environment.set(\"quote_id\", jsonData.options[0].quote_id);\r",
+                      "pm.environment.set(\"schema\", jsonData.options[0].schema);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "    /*Cards AR\r",
+                      "    CABAL - 6502720013589570 cvv 699 validade 11-29\r",
+                      "          - 6500870076437051 cvv 254 validade 11-29\r",
+                      "    NARANJA - 5895625664145911\r",
+                      "    AMEX - 373953192351004   cvv = 8031   validade = 12/24\r",
+                      "    VISA - 4123220000000909 - CREDIT\r",
+                      "\t     - 4231390000011336 - CREDIT\r",
+                      "\t     - 4517510000000931 - DEBIT\r",
+                      "    MASTER - 5308418330410236 - CREDIT\r",
+                      "\t       - 5491800000000537 - DEBIT\r",
+                      "    Card CL\r",
+                      "    5213120418132948 - Mastercard domestico\r",
+                      "    5110420000006938 - Mastercard internacional\r",
+                      "    4508830000001759 - Visa domestico\r",
+                      "    4025240000000948 - Visa internacional \r",
+                      "    37667202091579261 - Amex internacional \r",
+                      "    Cards MX\r",
+                      "    5188999100986013 - Mastercard - Credito\r",
+                      "    4931350008098878 - Visa - Credito\r",
+                      "    5062650005970377 - Carnet (Nacional) - Débito\r",
+                      "    376674798472005 / Venc. 02/26, Cvv 5595 - Amex - Credito\r",
+                      "    6510000000000810 - Discover (Nacional) - Credito\r",
+                      "    */"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"amount\": 500000,\r\n    \"bin\": \"5213120\"\r\n\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments/quotes",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments", "quotes"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "(AR and CL) Payments with quotes",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [""],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"order_id\": \"{{$guid}}\",\r\n    \"data\": {\r\n        \"amount\": 41200,\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"marcos_13\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$guid}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT\",\r\n            \"save_card_data\": false,\r\n            \"transaction_type\": \"INSTALL_NO_INTEREST\",\r\n            \"number_installments\": 6,\r\n            \"card\": {\r\n                \"security_code\": \"999\",\r\n                \"entry_mode\": \"chip\",\r\n                \"seq_number\": \"999\",\r\n                \"pin_block\": \"1234567890123456\",\r\n                \"pin_key_id\": \"6c1dc01b-0889-4bd0-aa72-74205fa06ef3\",\r\n                \"ksn\": \"maxLength: 20\",\r\n                \"emv\": \"maxLength: 510\",\r\n                \"aid\": \"maxLength: 255\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"aggregator\": \"siscard\",\r\n                \"service_code\": {\r\n                    \"interchange\": \"international\",\r\n                    \"chip\": true,\r\n                    \"authorization_process\": \"normal_rules\",\r\n                    \"pin_required\": \"required\",\r\n                    \"range_of_services\": \"no_restrictions\"\r\n                },\r\n                \"track_1\": \"kE172393918657757^TDIhvtDtWo]cA%BNp\\\\H^D5;>S ^'b1e7v(#^J)P*3p\",\r\n                \"track_2\": \"31=688920113116588600773528600895355929922256637311527313872595069890598092676292704006176031988364378ex/\\\"=$=OfA7H~%Ri\\\"rZADPTLH9x.rw0Y O87492w9GizfkM60iwwHBrciSd2vD?u/:\"\r\n            }\r\n        },\r\n        \"additional_data\": {\r\n            \"installment\": {\r\n                \"quote_id\": \"{{quote_id}}\",\r\n                \"schema\": \"{{schema}}\"\r\n            },\r\n            \"tip\": {\r\n                \"value\": 0,\r\n                \"partial_amount\": 0,\r\n                \"waiter_code\": \"pwAzCcdkcDyxRIQWIWzfG2eRI1KvhfKBS1r0g5qh\"\r\n            },\r\n            \"dynamic_currency_conversion\": {\r\n                \"currency\": \"AED\",\r\n                \"amount\": 1,\r\n                \"conversion_rate\": \"string\",\r\n                \"date\": \"string\",\r\n                \"markup\": 9999,\r\n                \"source\": {\r\n                    \"id\": \"string\",\r\n                    \"name\": \"string\"\r\n                }\r\n            }\r\n        }\r\n    }\r\n}"
+                },
+                "url": {
+                  "raw": "https://api.pre.globalgetnet.com/dpm/payments-gwproxy/v2/payments",
+                  "protocol": "https",
+                  "host": ["api", "pre", "globalgetnet", "com"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "(AR and CL) Payments with quotes and antifraud",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [""],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"order_id\": \"{{$guid}}\",\r\n    \"data\": {\r\n        \"amount\": 41200,\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"marcos_13\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$guid}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT\",\r\n            \"save_card_data\": false,\r\n            \"transaction_type\": \"INSTALL_NO_INTEREST\",\r\n            \"number_installments\": 6,\r\n            \"card\": {\r\n                \"security_code\": \"999\",\r\n                \"entry_mode\": \"chip\",\r\n                \"seq_number\": \"999\",\r\n                \"pin_block\": \"1234567890123456\",\r\n                \"pin_key_id\": \"6c1dc01b-0889-4bd0-aa72-74205fa06ef3\",\r\n                \"ksn\": \"maxLength: 20\",\r\n                \"emv\": \"maxLength: 510\",\r\n                \"aid\": \"maxLength: 255\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"aggregator\": \"siscard\",\r\n                \"service_code\": {\r\n                    \"interchange\": \"international\",\r\n                    \"chip\": true,\r\n                    \"authorization_process\": \"normal_rules\",\r\n                    \"pin_required\": \"required\",\r\n                    \"range_of_services\": \"no_restrictions\"\r\n                },\r\n                \"track_1\": \"kE172393918657757^TDIhvtDtWo]cA%BNp\\\\H^D5;>S ^'b1e7v(#^J)P*3p\",\r\n                \"track_2\": \"31=688920113116588600773528600895355929922256637311527313872595069890598092676292704006176031988364378ex/\\\"=$=OfA7H~%Ri\\\"rZADPTLH9x.rw0Y O87492w9GizfkM60iwwHBrciSd2vD?u/:\"\r\n            }\r\n        },\r\n        \"additional_data\": {\r\n            \"tip\": {\r\n                \"value\": 0,\r\n                \"partial_amount\": 0,\r\n                \"waiter_code\": \"pwAzCcdkcDyxRIQWIWzfG2eRI1KvhfKBS1r0g5qh\"\r\n            },\r\n            \"dynamic_currency_conversion\": {\r\n                \"currency\": \"AED\",\r\n                \"amount\": 1,\r\n                \"conversion_rate\": \"string\",\r\n                \"date\": \"string\",\r\n                \"markup\": 9999,\r\n                \"source\": {\r\n                    \"id\": \"string\",\r\n                    \"name\": \"string\"\r\n                }\r\n            },\r\n            \"device\": {\r\n                \"ip_address\": \"10.191.62.9\",\r\n                \"device_id\": \"TESTE_PLATAFORMA_DIGITAL_ANTIFRAUDE_2023\"\r\n            },\r\n            \"customer\": {\r\n                \"shippings\": {\r\n                    \"address\": {\r\n                        \"street\": \"Avenida Mexico\",\r\n                        \"number\": \"100\",\r\n                        \"complement\": \"\",\r\n                        \"district\": \"Progreso\",\r\n                        \"city\": \"Acapulco\",\r\n                        \"state\": \"Guerrero\",\r\n                        \"country\": \"Mexico\",\r\n                        \"postal_code\": \"39300\",\r\n                        \"type\": \"RESIDENCIAL\"\r\n                    }\r\n                },\r\n                \"customer_id\": \"72982307006\",\r\n                \"document_type\": \"{{document_type}}\",\r\n                \"document_number\": \"{{document_number}}\",\r\n                \"first_name\": \"teste\",\r\n                \"last_name\": \"teste\",\r\n                \"name\": \"teste teste\",\r\n                \"email\": \"{{EMAIL_CUSTOMER}}\",\r\n                \"phone_number\": \"11923456789\",\r\n                \"billing_address\": {\r\n                    \"street\": \"Avenida Mexico\",\r\n                    \"number\": \"100\",\r\n                    \"complement\": \"\",\r\n                    \"district\": \"Progreso\",\r\n                    \"city\": \"Acapulco\",\r\n                    \"state\": \"Guerrero\",\r\n                    \"country\": \"Mexico\",\r\n                    \"postal_code\": \"39300\",\r\n                    \"type\": \"RESIDENCIAL\"\r\n                }\r\n            },\r\n            \"order\": {\r\n                \"items\": [\r\n                    {\r\n                        \"name\": \"Climatizador de Ar Cadence Climatize Compact CLI30\",\r\n                        \"quantity\": 1,\r\n                        \"sku\": \"11835803\",\r\n                        \"price\": 412.0\r\n                    }\r\n                ]\r\n            },\r\n            \"installment\": {\r\n                \"quote_id\": \"{{quote_id}}\",\r\n                \"schema\": \"{{schema}}\"\r\n            }\r\n        }\r\n    }\r\n}"
+                },
+                "url": {
+                  "raw": "https://api.pre.globalgetnet.com/dpm/payments-gwproxy/v2/payments",
+                  "protocol": "https",
+                  "host": ["api", "pre", "globalgetnet", "com"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Pre-auth",
+          "item": [
+            {
+              "name": "Pre authorization payments",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);\r",
+                      "pm.environment.set(\"transaction_id\", data.transaction_id);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.set(\"amount\", Number(require('moment')().format('HHmm')));\r",
+                      "\r",
+                      "/*Cards AR\r",
+                      "    CABAL - 6502720013589570 cvv 699 validade 11-29\r",
+                      "          - 6500870076437051 cvv 254 validade 11-29\r",
+                      "    NARANJA - 5895625664145911\r",
+                      "    AMEX - 373953192351004   cvv = 8031   validade = 12/24\r",
+                      "    VISA - 4123220000000909 - CREDIT\r",
+                      "\t     - 4231390000011336 - CREDIT\r",
+                      "\t     - 4517510000000931 - DEBIT\r",
+                      "    MASTER - 5308418330410236 - CREDIT\r",
+                      "\t       - 5491800000000537 - DEBIT\r",
+                      "    Card CL\r",
+                      "    5213120418132948 - Mastercard domestico\r",
+                      "    5110420000006938 - Mastercard internacional\r",
+                      "    4508830000001759 - Visa domestico\r",
+                      "    4025240000000948 - Visa internacional \r",
+                      "    37667202091579261 - Amex internacional \r",
+                      "    Cards MX\r",
+                      "    5188999100986013 - Mastercard - Credito\r",
+                      "    4931350008098878 - Visa - Credito\r",
+                      "    5062650005970377 - Carnet (Nacional) - Débito\r",
+                      "    376674798472005 / Venc. 02/26, Cvv 5595 - Amex - Credito\r",
+                      "    6510000000000810 - Discover (Nacional) - Credito\r",
+                      "    */"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$randomUUID}}\",\r\n    \"request_id\": \"{{$randomUUID}}\",\r\n    \"order_id\": \"{{$randomUUID}}\",\r\n    \"data\": {\r\n        \"amount\": {{amount}},\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"{{$randomUUID}}\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$randomUUID}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT_PRE_AUTHORIZATION\",\r\n            \"transaction_type\": \"FULL\",\r\n            \"number_installments\": 1,\r\n            \"soft_descriptor\": \"MINHA*LOJA\",\r\n            \"dynamic_mcc\": \"5992\",\r\n            \"card\": {\r\n                \"number\": \"5110420000006938\",\r\n                \"entry_mode\": \"chip\",\r\n                \"emv\": \"9f2701809f3303e0f8c8950580000080009f37045d21705a9f100706010a03a0b8089f2608819ba36f3f7934149f360205b782021c009c01009f1a0204849a032002279f02060000000309605F2A0200325f3401019f34031e03009f120c56495341204352454449544f5f201a2f435249535449414e2047414c494e444f2043484156455a2020\",\r\n                \"track_2\": \"5110420000006938=102828102800006930\"\r\n            }\r\n        }\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                },
+                "description": "Generated from cURL: curl --location 'https://localhost:3000/v1/authenticated/preauthorization' \\\r\n--header 'x-antifraud: true' \\\r\n--header 'x-antifraud-service: cybersource' \\\r\n--header 'x-disable-conciliator: true' \\\r\n--header 'x-merchant-id: 51554222' \\\r\n--header 'x-password: eyJ0eXAiOiJKV1QiLCJhbGciOiJkaXIiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIn0' \\\r\n--header 'x-seller-id: d2002919-d898-4915-a0d3-7cd08c4e9558' \\\r\n--header 'x-terminal-id: E500451502' \\\r\n--header 'x-trace-id: ec89422d-3c9b-4a7b-8f2b-d397cb10afaa' \\\r\n--header 'x-username: PLAT_XXIII_51554222' \\\r\n--header 'Content-Type: application/json' \\\r\n--data '{\r\n    \"currency\": \"BRL\",\r\n    \"customer_id\": \"6806e8cb-b27d-48b2-97b8-5c985a24fde5\",\r\n    \"disable_conciliator\": true,\r\n    \"disable_probe\": true,\r\n    \"dynamic_mcc\": \"1234\",\r\n    \"idempotency_key\": \"57d3e6ae-1517-4ba9-bb32-5cccf3de436a\",\r\n    \"number_installments\": 5,\r\n    \"order_id\": \"4a2a0cb0-782a-412c-8afc-0ee2e61a0df5\",\r\n    \"payment_id\": \"acf763c6-2c8f-4928-aca9-4f39e8693c61\",\r\n    \"payment_method\": \"CREDIT_PRE_AUTHORIZATION\",\r\n    \"save_card_data\": false,\r\n    \"amount\": 500505,\r\n    \"transaction_type\": \"INSTALL_NO_INTEREST\",\r\n    \"soft_descriptor\": \"MEUECOMM*ORDER10187383\",\r\n    \"card\": {\r\n        \"brand\": \"mastercard\",\r\n        \"cardholder_name\": \"Roland Deschain\",\r\n        \"expiration_month\": \"09\",\r\n        \"expiration_year\": \"30\",\r\n        \"number\": \"5155901222280001\",\r\n        \"security_code\": \"517\"\r\n    },\r\n    \"additional_data\": {\r\n        \"split_flag\": false\r\n    }\r\n}'"
+              },
+              "response": []
+            },
+            {
+              "name": "(CL + AR) Pre authorization payments with coutas",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);\r",
+                      "pm.environment.set(\"transaction_id\", data.transaction_id);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"order_id\": \"{{$guid}}\",\r\n    \"data\": {\r\n        \"amount\": 41200,\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"marcos_13\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$guid}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT_PRE_AUTHORIZATION\",\r\n            \"save_card_data\": false,\r\n            \"transaction_type\": \"INSTALL_NO_INTEREST\",\r\n            \"number_installments\": 6,\r\n            \"card\": {\r\n                \"security_code\": \"999\",\r\n                \"entry_mode\": \"chip\",\r\n                \"seq_number\": \"999\",\r\n                \"pin_block\": \"1234567890123456\",\r\n                \"pin_key_id\": \"6c1dc01b-0889-4bd0-aa72-74205fa06ef3\",\r\n                \"ksn\": \"maxLength: 20\",\r\n                \"emv\": \"maxLength: 510\",\r\n                \"aid\": \"maxLength: 255\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"aggregator\": \"siscard\",\r\n                \"service_code\": {\r\n                    \"interchange\": \"international\",\r\n                    \"chip\": true,\r\n                    \"authorization_process\": \"normal_rules\",\r\n                    \"pin_required\": \"required\",\r\n                    \"range_of_services\": \"no_restrictions\"\r\n                },\r\n                \"track_1\": \"kE172393918657757^TDIhvtDtWo]cA%BNp\\\\H^D5;>S ^'b1e7v(#^J)P*3p\",\r\n                \"track_2\": \"31=688920113116588600773528600895355929922256637311527313872595069890598092676292704006176031988364378ex/\\\"=$=OfA7H~%Ri\\\"rZADPTLH9x.rw0Y O87492w9GizfkM60iwwHBrciSd2vD?u/:\"\r\n            }\r\n        },\r\n        \"additional_data\": {\r\n            \"tip\": {\r\n                \"value\": 0,\r\n                \"partial_amount\": 0,\r\n                \"waiter_code\": \"pwAzCcdkcDyxRIQWIWzfG2eRI1KvhfKBS1r0g5qh\"\r\n            },\r\n            \"dynamic_currency_conversion\": {\r\n                \"currency\": \"AED\",\r\n                \"amount\": 1,\r\n                \"conversion_rate\": \"string\",\r\n                \"date\": \"string\",\r\n                \"markup\": 9999,\r\n                \"source\": {\r\n                    \"id\": \"string\",\r\n                    \"name\": \"string\"\r\n                }\r\n            },\r\n            \"device\": {\r\n                \"ip_address\": \"10.191.62.9\",\r\n                \"device_id\": \"TESTE_PLATAFORMA_DIGITAL_ANTIFRAUDE_2023\"\r\n            },\r\n            \"customer\": {\r\n                \"shippings\": {\r\n                    \"address\": {\r\n                        \"street\": \"Avenida Mexico\",\r\n                        \"number\": \"100\",\r\n                        \"complement\": \"\",\r\n                        \"district\": \"Progreso\",\r\n                        \"city\": \"Acapulco\",\r\n                        \"state\": \"Guerrero\",\r\n                        \"country\": \"Mexico\",\r\n                        \"postal_code\": \"39300\",\r\n                        \"type\": \"RESIDENCIAL\"\r\n                    }\r\n                },\r\n                \"customer_id\": \"72982307006\",\r\n                \"document_type\": \"{{document_type}}\",\r\n                \"document_number\": \"{{document_number}}\",\r\n                \"first_name\": \"teste\",\r\n                \"last_name\": \"teste\",\r\n                \"name\": \"teste teste\",\r\n                \"email\": \"{{EMAIL_CUSTOMER}}\",\r\n                \"phone_number\": \"11923456789\",\r\n                \"billing_address\": {\r\n                    \"street\": \"Avenida Mexico\",\r\n                    \"number\": \"100\",\r\n                    \"complement\": \"\",\r\n                    \"district\": \"Progreso\",\r\n                    \"city\": \"Acapulco\",\r\n                    \"state\": \"Guerrero\",\r\n                    \"country\": \"Mexico\",\r\n                    \"postal_code\": \"39300\",\r\n                    \"type\": \"RESIDENCIAL\"\r\n                }\r\n            },\r\n            \"order\": {\r\n                \"items\": [\r\n                    {\r\n                        \"name\": \"Climatizador de Ar Cadence Climatize Compact CLI30\",\r\n                        \"quantity\": 1,\r\n                        \"sku\": \"11835803\",\r\n                        \"price\": 412.0\r\n                    }\r\n                ]\r\n            },\r\n            \"installment\": {\r\n                \"quote_id\": \"{{quote_id}}\",\r\n                \"schema\": \"{{schema}}\"\r\n            }\r\n        }\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                },
+                "description": "Generated from cURL: curl --location 'https://localhost:3000/v1/authenticated/preauthorization' \\\r\n--header 'x-antifraud: true' \\\r\n--header 'x-antifraud-service: cybersource' \\\r\n--header 'x-disable-conciliator: true' \\\r\n--header 'x-merchant-id: 51554222' \\\r\n--header 'x-password: eyJ0eXAiOiJKV1QiLCJhbGciOiJkaXIiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIn0' \\\r\n--header 'x-seller-id: d2002919-d898-4915-a0d3-7cd08c4e9558' \\\r\n--header 'x-terminal-id: E500451502' \\\r\n--header 'x-trace-id: ec89422d-3c9b-4a7b-8f2b-d397cb10afaa' \\\r\n--header 'x-username: PLAT_XXIII_51554222' \\\r\n--header 'Content-Type: application/json' \\\r\n--data '{\r\n    \"currency\": \"BRL\",\r\n    \"customer_id\": \"6806e8cb-b27d-48b2-97b8-5c985a24fde5\",\r\n    \"disable_conciliator\": true,\r\n    \"disable_probe\": true,\r\n    \"dynamic_mcc\": \"1234\",\r\n    \"idempotency_key\": \"57d3e6ae-1517-4ba9-bb32-5cccf3de436a\",\r\n    \"number_installments\": 5,\r\n    \"order_id\": \"4a2a0cb0-782a-412c-8afc-0ee2e61a0df5\",\r\n    \"payment_id\": \"acf763c6-2c8f-4928-aca9-4f39e8693c61\",\r\n    \"payment_method\": \"CREDIT_PRE_AUTHORIZATION\",\r\n    \"save_card_data\": false,\r\n    \"amount\": 500505,\r\n    \"transaction_type\": \"INSTALL_NO_INTEREST\",\r\n    \"soft_descriptor\": \"MEUECOMM*ORDER10187383\",\r\n    \"card\": {\r\n        \"brand\": \"mastercard\",\r\n        \"cardholder_name\": \"Roland Deschain\",\r\n        \"expiration_month\": \"09\",\r\n        \"expiration_year\": \"30\",\r\n        \"number\": \"5155901222280001\",\r\n        \"security_code\": \"517\"\r\n    },\r\n    \"additional_data\": {\r\n        \"split_flag\": false\r\n    }\r\n}'"
+              },
+              "response": []
+            },
+            {
+              "name": "Pre auth payment with Antifraud",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var data = pm.response.json();\r",
+                      "pm.environment.set(\"payment_id\", data.payment_id);\r",
+                      "pm.environment.set(\"payment_method\", data.payment_method);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "// Brazil - CPF\r",
+                      "\r",
+                      "function gera_random(n) {\r",
+                      "    const ranNum = Math.round(Math.random()*n);\r",
+                      "    return ranNum;\r",
+                      "}\r",
+                      "function mod(dividendo,divisor) {\r",
+                      "    return Math.round(dividendo - (Math.floor(dividendo/divisor)*divisor));\r",
+                      "}\r",
+                      "function gera_cpf() {\r",
+                      "    const n = 9;\r",
+                      "    const n1 = gera_random(n);\r",
+                      "    const n2 = gera_random(n);\r",
+                      "    const n3 = gera_random(n);\r",
+                      "    const n4 = gera_random(n);\r",
+                      "    const n5 = gera_random(n);\r",
+                      "    const n6 = gera_random(n);\r",
+                      "    const n7 = gera_random(n);\r",
+                      "    const n8 = gera_random(n);\r",
+                      "    const n9 = gera_random(n);\r",
+                      "    let d1 = n9*2+n8*3+n7*4+n6*5+n5*6+n4*7+n3*8+n2*9+n1*10;\r",
+                      "    d1 = 11 - (mod(d1,11));\r",
+                      "    if (d1>=10) d1 = 0;\r",
+                      "    let d2 = d1*2+n9*3+n8*4+n7*5+n6*6+n5*7+n4*8+n3*9+n2*10+n1*11;\r",
+                      "    d2 = 11 - (mod(d2,11));\r",
+                      "    \r",
+                      "    if (d2>=10) d2 = 0;         \r",
+                      "      \r",
+                      "    return ''+n1+n2+n3+n4+n5+n6+n7+n8+n9+d1+d2;\r",
+                      "}\r",
+                      "\r",
+                      "// Argentina - DNI\r",
+                      "\r",
+                      "function rand_dni() {\r",
+                      "  num = Math.floor( ( Math.random() * 100000000 ) );\r",
+                      "  sNum = formatNumberLength( num, 8 );\r",
+                      "  return sNum + charDNI( sNum );\r",
+                      "}\r",
+                      "\r",
+                      "function formatNumberLength(num, length) {\r",
+                      "  var r = \"\" + num;\r",
+                      "  while ( r.length < length ) {\r",
+                      "    r = \"0\" + r;\r",
+                      "  }\r",
+                      "  return r;\r",
+                      "}\r",
+                      "\r",
+                      "function charDNI(dni) {\r",
+                      "  var chain = \"TRWAGMYFPDXBNJZSQVHLCKET\";\r",
+                      "  var pos = dni % 23;\r",
+                      "  var letter = chain.substring( pos, pos + 1 );\r",
+                      "  return letter;\r",
+                      "}\r",
+                      "\r",
+                      "// Chile - RUT\r",
+                      "\r",
+                      "function getRutNumbers(numberOfRuts=10, minValue=1e6, maxValue=4e7) {\r",
+                      "  let ruts = [];\r",
+                      "  \r",
+                      "  const rutOpts = {\r",
+                      "    quantity: numberOfRuts,\r",
+                      "    minValue: minValue,\r",
+                      "    maxValue: maxValue\r",
+                      "  };\r",
+                      "\r",
+                      "  function generateRuts() {\r",
+                      "    var e, n, r, u, i;\r",
+                      "    n = [];\r",
+                      "    t = 0;\r",
+                      "    while (t < rutOpts.quantity) {\r",
+                      "      i = getRandomNumber();\r",
+                      "      r = 0;\r",
+                      "      e = false;\r",
+                      "      while (r < n.length) {\r",
+                      "        if (n[r].number === i) {\r",
+                      "          e = true;\r",
+                      "          break\r",
+                      "        }\r",
+                      "        r++\r",
+                      "      }\r",
+                      "      if (!e) {\r",
+                      "        u = getMod(i);\r",
+                      "        n.push({\r",
+                      "          number: i,\r",
+                      "          mod: u\r",
+                      "        })\r",
+                      "      }\r",
+                      "      t++;\r",
+                      "    }\r",
+                      "    return ruts = n\r",
+                      "  };\r",
+                      "\r",
+                      "  function getRandomNumber() {\r",
+                      "    var t, e, n, r;\r",
+                      "    r = rutOpts.minValue;\r",
+                      "    n = rutOpts.maxValue;\r",
+                      "    e = parseInt(t);\r",
+                      "    if (!e) {\r",
+                      "      return Math.floor(Math.random() * (n - r + 1)) + r\r",
+                      "    } else {\r",
+                      "      return e\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "  function getMod(t) {\r",
+                      "    var e, n;\r",
+                      "    e = 0;\r",
+                      "    n = 1;\r",
+                      "    while (t) {\r",
+                      "      n = (n + t % 10 * (9 - e++ % 6)) % 11;\r",
+                      "      t = Math.floor(t / 10)\r",
+                      "    }\r",
+                      "    if (n) {\r",
+                      "      return n - 1\r",
+                      "    } else {\r",
+                      "      return \"K\"\r",
+                      "    }\r",
+                      "  };\r",
+                      "\r",
+                      "\r",
+                      "  let generatedRuts = generateRuts().map(rut => `${rut.number}-${rut.mod}`)\r",
+                      "  if (generatedRuts.length === 1) { \r",
+                      "    return generatedRuts[0];\r",
+                      "  }\r",
+                      "  return generatedRuts;\r",
+                      "}\r",
+                      "\r",
+                      "// Tipo de documentos\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"CPF\"){\r",
+                      "    pm.environment.set(\"document_number\", gera_cpf());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"DNI_AR\"){\r",
+                      "    pm.environment.set(\"document_number\", rand_dni());\r",
+                      "}\r",
+                      "\r",
+                      "if (pm.environment.get(\"document_type\") == \"RUT\"){\r",
+                      "    pm.environment.set(\"document_number\", getRutNumbers(1));\r",
+                      "}\r",
+                      ""
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"order_id\": \"{{$guid}}\",\r\n    \"data\": {\r\n        \"amount\": 41200,\r\n        \"currency\": \"{{currency}}\",\r\n        \"customer_id\": \"marcos_13\",\r\n        \"payment\": {\r\n            \"payment_id\": \"{{$guid}}\",\r\n            \"payment_method\": \"DIRECT_CREDIT_PRE_AUTHORIZATION\",\r\n            \"save_card_data\": false,\r\n            \"transaction_type\": \"FULL\",\r\n            \"number_installments\": 1,\r\n            \"card\": {\r\n                \"security_code\": \"999\",\r\n                \"entry_mode\": \"chip\",\r\n                \"seq_number\": \"999\",\r\n                \"pin_block\": \"1234567890123456\",\r\n                \"pin_key_id\": \"6c1dc01b-0889-4bd0-aa72-74205fa06ef3\",\r\n                \"ksn\": \"maxLength: 20\",\r\n                \"emv\": \"maxLength: 510\",\r\n                \"aid\": \"maxLength: 255\",\r\n                \"cardholder_verification_method\": \"offline_pin\",\r\n                \"aggregator\": \"siscard\",\r\n                \"service_code\": {\r\n                    \"interchange\": \"international\",\r\n                    \"chip\": true,\r\n                    \"authorization_process\": \"normal_rules\",\r\n                    \"pin_required\": \"required\",\r\n                    \"range_of_services\": \"no_restrictions\"\r\n                },\r\n                \"track_1\": \"kE172393918657757^TDIhvtDtWo]cA%BNp\\\\H^D5;>S ^'b1e7v(#^J)P*3p\",\r\n                \"track_2\": \"31=688920113116588600773528600895355929922256637311527313872595069890598092676292704006176031988364378ex/\\\"=$=OfA7H~%Ri\\\"rZADPTLH9x.rw0Y O87492w9GizfkM60iwwHBrciSd2vD?u/:\"\r\n            }\r\n        },\r\n        \"additional_data\": {\r\n            \"tip\": {\r\n                \"value\": 0,\r\n                \"partial_amount\": 0,\r\n                \"waiter_code\": \"pwAzCcdkcDyxRIQWIWzfG2eRI1KvhfKBS1r0g5qh\"\r\n            },\r\n            \"dynamic_currency_conversion\": {\r\n                \"currency\": \"AED\",\r\n                \"amount\": 1,\r\n                \"conversion_rate\": \"string\",\r\n                \"date\": \"string\",\r\n                \"markup\": 9999,\r\n                \"source\": {\r\n                    \"id\": \"string\",\r\n                    \"name\": \"string\"\r\n                }\r\n            },\r\n            \"device\": {\r\n                \"ip_address\": \"10.191.62.9\",\r\n                \"device_id\": \"TESTE_PLATAFORMA_DIGITAL_ANTIFRAUDE_2023\"\r\n            },\r\n            \"customer\": {\r\n                \"shippings\": {\r\n                    \"address\": {\r\n                        \"street\": \"Avenida Mexico\",\r\n                        \"number\": \"100\",\r\n                        \"complement\": \"\",\r\n                        \"district\": \"Progreso\",\r\n                        \"city\": \"Acapulco\",\r\n                        \"state\": \"Guerrero\",\r\n                        \"country\": \"Mexico\",\r\n                        \"postal_code\": \"39300\",\r\n                        \"type\": \"RESIDENCIAL\"\r\n                    }\r\n                },\r\n                \"customer_id\": \"72982307006\",\r\n                \"document_type\": \"{{document_type}}\",\r\n                \"document_number\": \"{{document_number}}\",\r\n                \"first_name\": \"teste\",\r\n                \"last_name\": \"teste\",\r\n                \"name\": \"teste teste\",\r\n                \"email\": \"{{EMAIL_CUSTOMER}}\",\r\n                \"phone_number\": \"11923456789\",\r\n                \"billing_address\": {\r\n                    \"street\": \"Avenida Mexico\",\r\n                    \"number\": \"100\",\r\n                    \"complement\": \"\",\r\n                    \"district\": \"Progreso\",\r\n                    \"city\": \"Acapulco\",\r\n                    \"state\": \"Guerrero\",\r\n                    \"country\": \"Mexico\",\r\n                    \"postal_code\": \"39300\",\r\n                    \"type\": \"RESIDENCIAL\"\r\n                }\r\n            },\r\n            \"order\": {\r\n                \"items\": [\r\n                    {\r\n                        \"name\": \"Climatizador de Ar Cadence Climatize Compact CLI30\",\r\n                        \"quantity\": 1,\r\n                        \"sku\": \"11835803\",\r\n                        \"price\": 412.0\r\n                    }\r\n                ]\r\n            }\r\n        }\r\n    }\r\n}"
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Adjustment V2",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "let amount = pm.environment.get(\"amount\") || 0;\r",
+                      "pm.environment.set(\"amount\", amount + 1);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "x-seller-id",
+                    "value": "{{SELLER_ID}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"data\": {\r\n        \"amount\": {{amount}},\r\n        \"payment\": {\r\n            \"payment_method\": \"{{payment_method}}\",\r\n            \"payment_id\": \"{{payment_id}}\"\r\n        }\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Adjustment V2 with coutas",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "x-seller-id",
+                    "value": "{{SELLER_ID}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"data\": {\r\n        \"amount\": 41300,\r\n        \"payment\": {\r\n            \"payment_method\": \"{{payment_method}}\",\r\n            \"payment_id\": \"{{payment_id}}\"\r\n        }\r\n    },\r\n    \"additional_data\": {\r\n        \"installment\": {\r\n                \"quote_id\": \"{{quote_id}}\",\r\n                \"schema\": \"{{schema}}\"\r\n            }\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Capture V2",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"payment_id\": \"{{payment_id}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments/capture",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments", "capture"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel V2",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"idempotency_key\": \"{{$guid}}\",\r\n    \"payment_id\": \"{{payment_id}}\",\r\n    \"amount\": 120,\r\n    \"payment_method\": \"{{payment_method}}\",\r\n    \"custom_key\": \"Cancelamento_teste_{{$randomAlphaNumeric}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/payments-gwproxy/v2/payments/cancel",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "payments-gwproxy", "v2", "payments", "cancel"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Payment info",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-seller-id",
+                    "value": "{{SELLER_ID}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{URL_PRE_GLOBAL}}/dpm/hub-payment-info/v1/payments/info/{{payment_id}}",
+                  "host": ["{{URL_PRE_GLOBAL}}"],
+                  "path": ["dpm", "hub-payment-info", "v1", "payments", "info", "{{payment_id}}"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
